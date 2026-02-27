@@ -1,0 +1,9 @@
+{
+    "name": "TruthOrDare",
+    "display_name": "真心话大冒险 (TOD)",
+    "description": "和 AI 角色在聊天中玩真心话大冒险！支持自定义题库、上下文记忆和轮次交互。",
+    "version": "1.0.0",
+    "author": "Custom",
+    "js": "index.js",
+    "loading_order": 100
+}
