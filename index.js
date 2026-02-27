@@ -1,42 +1,71 @@
-import { SlashCommandParser } from "/scripts/slash-commands/SlashCommandParser.js";
+// index.js
 
-// 注入聊天区旁边的骰子按钮
-function injectDiceButton() {
-    // 如果已经有了，就不重复添加
-    if (document.getElementById('tod_dice_btn')) return;
+// 创建并注入可拖动的悬浮按钮
+function injectDraggableButton() {
+    // 防止重复注入
+    if (document.getElementById('tod_floating_btn')) return;
 
-    // 寻找 ST 原生的“发送按钮” (ID通常为 send_but)
-    const sendBtn = document.getElementById('send_but');
-    
-    if (sendBtn) {
-        // 创建一个包含骰子的按钮元素
-        const btnHtml = `<div id="tod_dice_btn" class="mes_button" title="真心话大冒险 (TOD)" style="cursor: pointer; display: flex; align-items: center; justify-content: center; margin-right: 10px; font-size: 1.5em;">🎲</div>`;
+    // 1. 创建一个脱离常规布局的悬浮按钮 (position: fixed)
+    const btnHtml = `
+        <div id="tod_floating_btn" title="真心话大冒险 (TOD)" 
+             style="position: fixed; right: 30px; bottom: 100px; width: 45px; height: 45px; 
+                    border-radius: 50%; background-color: var(--SmartThemeBlurTintColor, rgba(0,0,0,0.5)); 
+                    color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.3); display: flex; 
+                    align-items: center; justify-content: center; font-size: 1.8em; 
+                    cursor: grab; z-index: 9999; user-select: none; transition: background-color 0.2s;">
+            🎲
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', btnHtml);
+
+    const floatBtn = document.getElementById('tod_floating_btn');
+
+    // 2. 拖拽逻辑实现
+    let isDragging = false;
+    let startX, startY, initialX, initialY;
+
+    // 鼠标按下：准备拖动
+    floatBtn.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        floatBtn.style.cursor = 'grabbing';
+        startX = e.clientX;
+        startY = e.clientY;
+        initialX = floatBtn.offsetLeft;
+        initialY = floatBtn.offsetTop;
+    });
+
+    // 鼠标移动：更新位置
+    document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
         
-        // 将骰子按钮插在发送按钮的前面
-        sendBtn.insertAdjacentHTML('beforebegin', btnHtml);
+        // 覆盖原本的 right 和 bottom 属性，改用 left 和 top 控制位置
+        floatBtn.style.left = `${initialX + dx}px`;
+        floatBtn.style.top = `${initialY + dy}px`;
+        floatBtn.style.right = 'auto';
+        floatBtn.style.bottom = 'auto';
+    });
 
-        // 给按钮绑定点击测试事件
-        document.getElementById('tod_dice_btn').addEventListener('click', () => {
-            alert("太棒了！骰子按钮成功显示，UI 注入工作正常！");
-        });
-    } else {
-        console.error("TOD插件：未找到 ST 发送按钮，界面可能已更改。");
-    }
+    // 鼠标松开：结束拖动
+    document.addEventListener('mouseup', () => {
+        if (isDragging) {
+            isDragging = false;
+            floatBtn.style.cursor = 'grab';
+        }
+    });
+
+    // 3. 点击逻辑 (做了判断：如果是拖拽松开，就不触发点击)
+    floatBtn.addEventListener('click', (e) => {
+        // 计算鼠标落点和起点的距离，大于 5 像素说明是拖拽，不弹出提示
+        if (Math.abs(e.clientX - startX) > 5 || Math.abs(e.clientY - startY) > 5) return;
+        
+        alert("完美的点按！接下来我们会把这句弹窗替换成游戏的菜单页面。");
+    });
 }
 
 // 插件启动入口
 jQuery(() => {
-    // 1. 延迟 2 秒执行，确保 ST 的原生聊天界面已经完全加载
-    setTimeout(injectDiceButton, 2000);
-
-    // 2. 注册 /tod 指令
-    SlashCommandParser.addCommandObject(SlashCommandParser.getCommandObject(
-        'tod',
-        () => { 
-            alert("指令 /tod 触发成功！"); 
-            return ''; 
-        },
-        [],
-        '启动或停止真心话大冒险游戏'
-    ));
+    // 延迟 1 秒注入，确保页面加载完毕
+    setTimeout(injectDraggableButton, 1000);
 });
